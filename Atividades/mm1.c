@@ -78,9 +78,8 @@ int main(int argc, char *argv[]) {
   // Qual é o efeito de fazer um parallel for em cada um dos fors abaixo?
   /**
    * Ao usar #pragma omp parallel for em cada um dos fors, cada thread paralela assumirá
-   * uma parte do trabalho, dividindo as iterações desses loops entre elas. Dependendo do for
-   * que for paralelizado isso pode acelerar o processamento, pois várias tarefas serão realizadas
-   * simultaneamente por diferentes threads.
+   * uma parte do trabalho, dividindo as iterações desses loops entre elas. Isso acelera o
+   * processamento, pois várias tarefas são realizadas simultaneamente por diferentes threads.
   */
 
   // É necessários sincronizar alguma operação, garantindo exclusão mútua?
@@ -91,54 +90,37 @@ int main(int argc, char *argv[]) {
    * específicos da matriz C neste caso.
   */
 
-  double tempo_inicio, tempo_fim;
-
-  printf("Threads\tTempo\n");
-
-  // Paralelização do loop externo (de índice i) usando 1, 2, 4, 8, 16, 32, 64 e 128 threads
-  for (num_threads = 1; num_threads <= MAX_THREADS; num_threads *= 2) {
-    omp_set_num_threads(num_threads); // Atribui quantas threads serão usadas
-
-    // Função para calcular o tempo entre o início e o fim de um loop (paralelo ou não)
-    tempo_inicio = omp_get_wtime();
-
-    // Uso da diretiva do OpenMP para paralelizar o loop externo
-    #pragma omp parallel for private(i, j, k) shared(A, B, C)
-    for (i = 0; i < lin_c; i++) {
-      for (j = 0; j < col_c; j++) {
-        C[i * col_c + j] = 0;
-        for (k = 0; k < col_a; k++) {
-          C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
-        }
+  // Uso da diretiva do OpenMP para paralelizar o loop externo
+  #pragma omp parallel for private(i, j, k) shared(A, B, C)
+  for (i = 0; i < lin_c; i++) {
+    for (j = 0; j < col_c; j++) {
+      C[i * col_c + j] = 0;
+      for (k = 0; k < col_a; k++) {
+        C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
       }
     }
+  }
 
-    // Agora, paralelizando o loop intermediário
-    // for (i = 0; i < lin_c; i++) {
-    //   #pragma omp parallel for private(j, k) shared(A, B, C)
-    //   for (j = 0; j < col_c; j++) {
-    //     C[i * col_c + j] = 0;
-    //     for (k = 0; k < col_a; k++) {
-    //       C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
-    //     }
-    //   }
-    // }
+  // Agora, paralelizando o loop intermediário
+  for (i = 0; i < lin_c; i++) {
+    #pragma omp parallel for private(j, k) shared(A, B, C)
+    for (j = 0; j < col_c; j++) {
+      C[i * col_c + j] = 0;
+      for (k = 0; k < col_a; k++) {
+        C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
+      }
+    }
+  }
 
-    // Por fim, paralelizando o loop interno
-    // for (i = 0; i < lin_c; i++) {
-    //   for (j = 0; j < col_c; j++) {
-    //     C[i * col_c + j] = 0;
-    //     #pragma omp parallel for private(k) shared(A, B, C)
-    //     for (k = 0; k < col_a; k++) {
-    //       C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
-    //     }
-    //   }
-    // }
-
-    tempo_fim = omp_get_wtime();
-
-    // Mostra na tela quantas threads foram usadas no processamento paralelo e quanto tempo levou para terminar
-    printf("%d\t%f\n", num_threads, tempo_fim - tempo_inicio);
+  // Por fim, paralelizando o loop interno
+  for (i = 0; i < lin_c; i++) {
+    for (j = 0; j < col_c; j++) {
+      C[i * col_c + j] = 0;
+      #pragma omp parallel for private(k) shared(A, B, C)
+      for (k = 0; k < col_a; k++) {
+        C[i * col_c + j] += A[i * col_a + k] * B[k * col_b + j];
+      }
+    }
   }
 
   return (0);
